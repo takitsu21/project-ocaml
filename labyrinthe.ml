@@ -8,19 +8,35 @@ set_line_width 2;
 module UF =
 struct
   let max_rang = ref 0
-  type t = {forest: (int * int) array}
+  (* type t = {forest: (int * int) array} *)
+  type t = {parent: int array; rank: int array}
+  (* let create n =
+     {forest=Array.init (n - 1) (fun i -> (i, 0))} *)
 
   let create n =
-    {forest=Array.init (n - 1) (fun i -> (i, 0))}
+    { parent = Array.init n (fun i -> i); rank=Array.make n 0 }
 
-  let rec find uf x =
-    Printf.printf "on est la %d\n" x;
-    if fst uf.forest.(x) <> x
-    then begin
-      uf.forest.(x) <- (find uf (fst uf.forest.(x)), snd uf.forest.(x));
-      (fst uf.forest.(x));
+
+  let rec find uf i =
+    let pi = uf.parent.(i) in
+    if pi == i then
+      i
+    else begin
+      let ci = find uf pi in
+      uf.parent.(i) <- ci; (* path compression *)
+      ci
     end
-    else (fst uf.forest.(x))
+
+
+  (* let rec find uf x =
+     Printf.printf "on est la %d\n" x;
+     if fst uf.forest.(x) <> x
+     then begin
+      let racine = find uf (fst uf.forest.(x)) in
+      uf.forest.(x) <- (racine, snd uf.forest.(x));
+      racine;
+     end
+     else (fst uf.forest.(x)) *)
 
   (* if fst uf.forest.(x) = x then
      x
@@ -31,36 +47,48 @@ struct
       racine
      end *)
 
-  let union uf n m =
-    let i = find uf n in
-    let j = find uf m in
-    (* if (snd uf.forest.(i) = snd uf.forest.(j)) then ()
-       else begin
-       if (snd uf.forest.(i) > snd uf.forest.(j)) then
-        uf.forest.(j) <- (i, snd uf.forest.(j))
-       else begin
-        uf.forest.(i) <- (j, snd uf.forest.(i));
-
-        if (snd uf.forest.(i) = snd uf.forest.(i))
-        then uf.forest.(j) <- (fst uf.forest.(j), (snd uf.forest.(j) + 1))
-
-       end
-       end *)
-
-    let rec aux uf i j =
-      (* Union par rang. *)
-      if snd uf.forest.(i) <= snd uf.forest.(j) then begin
-        uf.forest.(i) <- (j, snd uf.forest.(i));
-        if snd uf.forest.(i) = snd uf.forest.(j) then begin
-          uf.forest.(j) <- (fst uf.forest.(j), snd uf.forest.(j) + 1);
-          max_rang := max !max_rang (snd uf.forest.(j))
-        end
-      end
+  let union ({ parent = p; rank = r } as uf) x y =
+    let cx = find uf x in
+    let cy = find uf y in
+    if cx != cy then begin
+      if r.(cx) > r.(cy) then
+        p.(cy) <- cx
+      else if r.(cx) < r.(cy) then
+        p.(cx) <- cy
       else begin
-        print_int i;
-        aux uf j i
+        r.(cx) <- r.(cx) + 1;
+        p.(cy) <- cx
       end
-    in if i <> j then aux uf i j;
+    end
+
+
+  (* if (snd uf.forest.(i) = snd uf.forest.(j)) then ()
+     else begin
+     if (snd uf.forest.(i) > snd uf.forest.(j)) then
+      uf.forest.(j) <- (i, snd uf.forest.(j))
+     else begin
+      uf.forest.(i) <- (j, snd uf.forest.(i));
+
+      if (snd uf.forest.(i) = snd uf.forest.(i))
+      then uf.forest.(j) <- (fst uf.forest.(j), (snd uf.forest.(j) + 1))
+
+     end
+     end *)
+
+  (* let rec aux uf i j =
+     (* Union par rang. *)
+     if snd uf.forest.(i) <= snd uf.forest.(j) then begin
+      uf.forest.(i) <- (j, snd uf.forest.(i));
+      if snd uf.forest.(i) = snd uf.forest.(j) then begin
+        uf.forest.(j) <- (fst uf.forest.(j), snd uf.forest.(j) + 1);
+        max_rang := max !max_rang (snd uf.forest.(j))
+      end
+     end
+     else begin
+      print_int i;
+      aux uf j i
+     end
+     in if i <> j then aux uf i j; *)
 end;;
 
 let cases_adjacentes l h (d, x, y) =
@@ -80,7 +108,7 @@ let generate_lab l h =
   Printf.printf "mur present length : %d\n" (Array.length mur_present.(0).(0));
   let uf = UF.create (l * h) in
   let acc = ref 1 in
-  while (UF.find uf 0) <> (UF.find uf (Array.length uf.forest - 1)) do
+  while !acc < (l * h) - 1 do
     let (d, x, y) = mur_au_hasard l h in
     let (i, j) = cases_adjacentes l h (d, x, y) in
 
@@ -89,11 +117,11 @@ let generate_lab l h =
       if UF.find uf i <> UF.find uf j
       then begin
         UF.union uf i j;
-        (* Printf.printf "d = %d x = %d y = %d\n" d x y; *)
-        mur_present.(d).(x).(y) <- false;
-        acc := !acc + 1;
+        Printf.printf "d = %d x = %d y = %d\n" d x y;
+
+
       end
-    with invalid_arg -> ();
+    with invalid_arg -> acc := !acc + 1; mur_present.(d).(x).(y) <- false;
       (* else *)
   done;
   (uf, mur_present)
