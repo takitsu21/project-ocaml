@@ -11,22 +11,42 @@ struct
   type t = {forest: (int * int) array}
 
   let create n =
-    {forest=Array.init n (fun i -> (i, 0))};;
-
+    {forest=Array.init (n - 1) (fun i -> (i, 0))}
 
   let rec find uf x =
+    Printf.printf "on est la %d\n" x;
+    if fst uf.forest.(x) <> x
+    then begin
+      uf.forest.(x) <- (find uf (fst uf.forest.(x)), snd uf.forest.(x));
+      (fst uf.forest.(x));
+    end
+    else (fst uf.forest.(x))
 
-    if fst uf.forest.(x) = x then
-      x
-    else begin
+  (* if fst uf.forest.(x) = x then
+     x
+     else
+     begin
       let racine = find uf (fst uf.forest.(x)) in
       uf.forest.(x) <- (racine, snd uf.forest.(x)); (* Compression de chemin. *)
       racine
-    end
+     end *)
 
   let union uf n m =
     let i = find uf n in
     let j = find uf m in
+    (* if (snd uf.forest.(i) = snd uf.forest.(j)) then ()
+       else begin
+       if (snd uf.forest.(i) > snd uf.forest.(j)) then
+        uf.forest.(j) <- (i, snd uf.forest.(j))
+       else begin
+        uf.forest.(i) <- (j, snd uf.forest.(i));
+
+        if (snd uf.forest.(i) = snd uf.forest.(i))
+        then uf.forest.(j) <- (fst uf.forest.(j), (snd uf.forest.(j) + 1))
+
+       end
+       end *)
+
     let rec aux uf i j =
       (* Union par rang. *)
       if snd uf.forest.(i) <= snd uf.forest.(j) then begin
@@ -37,9 +57,10 @@ struct
         end
       end
       else begin
+        print_int i;
         aux uf j i
       end
-    in if i <> j then aux uf i j;;
+    in if i <> j then aux uf i j;
 end;;
 
 let cases_adjacentes l h (d, x, y) =
@@ -54,41 +75,28 @@ let mur_au_hasard l h = (* renvoie un triplet (d, x, y) *)
   else let n2 = n - (l-1) * h in
     (1, n2 mod l, n2 / l)
 
-
-(* let mur_au_hasard l h =
-   let x = Random.int h in
-   let y = Random.int l in
-   let d = Random.int 2 in
-   if x = (l-1) then
-    if y = l-1 then
-      (0,x,y-1)
-    else (0,x,y) else
-   if y = (l- 1) then
-    if x < h-1 then
-      (1,x,y)
-    else (1,x-1,y) else
-    (d , x , y);; *)
-
-open Format
 let generate_lab l h =
   let mur_present = Array.make 2 (Array.make l (Array.init h (fun i -> true))) in
+  Printf.printf "mur present length : %d\n" (Array.length mur_present.(0).(0));
   let uf = UF.create (l * h) in
   let acc = ref 1 in
-  while !acc < (l * h) - 1 do
+  while (UF.find uf 0) <> (UF.find uf (Array.length uf.forest - 1)) do
     let (d, x, y) = mur_au_hasard l h in
     let (i, j) = cases_adjacentes l h (d, x, y) in
+
     try
       (* printf "%d\n" !acc; *)
       if UF.find uf i <> UF.find uf j
       then begin
         UF.union uf i j;
+        (* Printf.printf "d = %d x = %d y = %d\n" d x y; *)
         mur_present.(d).(x).(y) <- false;
         acc := !acc + 1;
       end
-    with invalid_arg -> printf "%d %d %d\n" i j ((l * h) - 1);
+    with invalid_arg -> ();
       (* else *)
   done;
-  mur_present
+  (uf, mur_present)
 
 let trace_pourtour upleftx uplefty taille_case l h =
   moveto upleftx uplefty;
@@ -128,4 +136,4 @@ let trace_lab upleftx uplefty taille_case l h =
 
 let () =
   clear_graph();
-  trace_lab 100 300 40 5 5;
+  trace_lab 100 300 40 5 5;;
