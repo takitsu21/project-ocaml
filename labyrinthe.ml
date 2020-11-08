@@ -1,6 +1,6 @@
 #load "graphics.cma";;
 open Graphics;;
-open_graph " 1920x1080";
+open_graph " 900x600";
 set_line_width 2;;
 
 module type UFsig =
@@ -62,7 +62,7 @@ let mur_au_hasard l h =
     if x < h - 1 then
       (1, x, y)
     else (1,x-1,y) else
-    (d , x , y);;
+    (d, x , y);;
 
 let test l h =
   for i = 0 to 100 do
@@ -125,7 +125,7 @@ let trace_lab upleftx uplefty taille_case l h mur_present =
   trace_pourtour upleftx uplefty taille_case l h;
   for d = 0 to 1 do
     for x = 0 to (h - 1) do
-      for y = 0 to (l - 1) do (* h - 2 pour éviter de faire les mur_present sur le coter droit *)
+      for y = 0 to (l - 1) do
         if y = l - 1 && d = 0 then ()
         else begin
           if mur_present.(d).(x).(y)
@@ -137,11 +137,27 @@ let trace_lab upleftx uplefty taille_case l h mur_present =
 
 let pacman_idx = ref 0;;
 
-let move_pacman h key taille_case = match key with
-  | 'z' -> pacman_idx := !pacman_idx - h;
-  | 'q' -> pacman_idx := !pacman_idx - 1;
-  | 's' -> pacman_idx := !pacman_idx + h;
-  | 'd' -> pacman_idx := !pacman_idx + 1;
+let verify_edges l h x =
+  (x < l * h) && (x >= 0)
+
+let move_pacman l h key taille_case mur_present =
+  let xl = !pacman_idx / l in
+  let yl = !pacman_idx mod l in
+
+  match key with
+
+  | 'z' when verify_edges l h (!pacman_idx - l) ->
+    if !pacman_idx >= l && not mur_present.(1).(xl - 1).(yl)
+    then pacman_idx := !pacman_idx - l;
+  | 'q' when verify_edges l h (!pacman_idx - 1) ->
+    if yl >= 1 && not mur_present.(0).(xl).(yl - 1)
+    then pacman_idx := !pacman_idx - 1;
+  | 's' when verify_edges l h (!pacman_idx + l) ->
+    if not mur_present.(1).(xl).(yl)
+    then pacman_idx := !pacman_idx + l;
+  | 'd' when verify_edges l h (!pacman_idx + 1) ->
+    if !pacman_idx < ((l * h) - 1) && not mur_present.(0).(xl).(yl)
+    then pacman_idx := !pacman_idx + 1;
   | _ -> ();;
 
 let dessine_pac x y c = begin
@@ -180,6 +196,9 @@ let gen_pacman_array_position upleftx uplefty l h taille_case =
   done;
   pacman_pos
 
+let is_win l h =
+  !pacman_idx = (l * h) - 1;;
+
 let draw_game upleftx uplefty l h taille_case =
   let mur_present = generate_lab l h in
   let pacman_pos = gen_pacman_array_position upleftx uplefty l h taille_case in
@@ -188,23 +207,21 @@ let draw_game upleftx uplefty l h taille_case =
   clear_graph ();
   trace_lab upleftx uplefty taille_case l h mur_present;
   dessine_pac !x !y yellow;
-  while true do
+  while not (is_win l h) do
     let key = read_key() in
-    try
-      move_pacman h key taille_case;
-      x := pacman_pos.(!pacman_idx).(0);
-      y := pacman_pos.(!pacman_idx).(1);
-      clear_graph ();
-      dessine_pac !x !y yellow;
-      trace_lab upleftx uplefty taille_case l h mur_present;
-    with invalid_arg -> ();
-  done;;
+    move_pacman l h key taille_case mur_present;
+    x := pacman_pos.(!pacman_idx).(0);
+    y := pacman_pos.(!pacman_idx).(1);
+    clear_graph ();
+    dessine_pac !x !y yellow;
+    trace_lab upleftx uplefty taille_case l h mur_present;
+  done;
+  clear_graph ();
+  moveto 500 500;
+  draw_string "GAGNE";;
 
-let is_win l h =
-  !pacman_idx = (l * h) - 1;;
-
-let check_wall mur_present (d, x, y) =
+let check_wall l h mur_present (d, x, y) =
   mur_present.(d).(x).(y)
 
 let () =
-  draw_game 100 850 200 200 4;;
+  draw_game 100 850 15 15 40;;
