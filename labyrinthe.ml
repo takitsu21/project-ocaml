@@ -132,7 +132,7 @@ let trace_lab upleftx uplefty taille_case l h mur_present =
 let verify_edges l h x =
   (x < l * h) && (x >= 0);;
 
-let move_pacman l h key taille_case mur_present =
+let move_pacman l h key mur_present =
   let xl = !pacman_idx / l in
   let yl = !pacman_idx mod l in
 
@@ -238,7 +238,7 @@ let draw_game upleftx uplefty l h taille_case =
   dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     let key = read_key() in
-    move_pacman l h key taille_case mur_present;
+    move_pacman l h key mur_present;
     clear_graph ();
     dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
     dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
