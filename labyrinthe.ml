@@ -267,8 +267,8 @@ let draw_game upleftx uplefty l h taille_case =
   else draw_string "GAGNE";;
 
 let () =
-  let l = 15 in
-  let h = 15 in
+  let l = 5 in
+  let h = 5 in
   let upleftx = 50 in
   let uplefty = 850 in
   let taille_case = 30 in
