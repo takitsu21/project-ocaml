@@ -32,14 +32,14 @@ struct
   let union ({ parent = p; rang = r } as uf) x y =
     let cx = find uf x in
     let cy = find uf y in
-    if cx != cy then begin
-      if r.(cx) > r.(cy) then
-        p.(cy) <- cx
-      else if r.(cx) < r.(cy) then
-        p.(cx) <- cy
+    if cx <> cy
+    then begin
+      if r.(cx) < r.(cy)
+      then p.(cx) <- cy
       else begin
-        r.(cx) <- r.(cx) + 1;
-        p.(cy) <- cx
+        p.(cy) <- cx;
+        if r.(cx) = r.(cy) then
+          r.(cx) <- r.(cx) + 1
       end
     end
 end;;
@@ -65,12 +65,6 @@ let mur_au_hasard l h =
     else (1,x-1,y) else
     (d, x , y);;
 
-let test l h =
-  for i = 0 to 100 do
-    let (d, x, y) = mur_au_hasard l h in
-    let (i, j) = cases_adjacentes l h (d, x, y) in
-    if i >= 35 || j >= 35 then Printf.printf "%d %d\n" i j;
-  done;;
 
 let gen_mur_present l h =
   let mur_present = Array.make 2 [||] in
@@ -220,41 +214,34 @@ let move_fantome l h =
   end;
   fantome_idx := !pos;;
 
-open Unix;;
-
 let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
-  let x = ref (pacman_pos.(!fantome_idx).(0)) in
-  let y = ref (pacman_pos.(!fantome_idx).(1)) in
-  dessine_pac !x !y blue;
+  dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
+    (* ignore (Unix.select [] [] [] 0.6); *)
     Unix.sleep 2;
-    move_fantome l h;
-    x := (pacman_pos.(!fantome_idx).(0));
-    y := (pacman_pos.(!fantome_idx).(1));
-    clear_graph ();
-    dessine_pac !x !y blue;
-    dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
-    trace_lab upleftx uplefty taille_case l h mur_present;
+    if (not (is_win l h) && (!pacman_idx <> !fantome_idx))
+    then begin
+      move_fantome l h;
+      clear_graph ();
+      dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
+      dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
+      trace_lab upleftx uplefty taille_case l h mur_present;
+    end;
   done;;
 
 let draw_game upleftx uplefty l h taille_case =
   let mur_present = generate_lab l h in
   let pacman_pos = gen_pacman_array_position upleftx uplefty l h taille_case in
-  let x = ref pacman_pos.(!pacman_idx).(0) in
-  let y = ref pacman_pos.(!pacman_idx).(1) in
   let _ = Thread.create ia (upleftx, uplefty, l, h, pacman_pos,  taille_case, mur_present) in
   clear_graph ();
   trace_lab upleftx uplefty taille_case l h mur_present;
-
-  dessine_pac !x !y yellow;
+  dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     let key = read_key() in
     move_pacman l h key taille_case mur_present;
-    x := pacman_pos.(!pacman_idx).(0);
-    y := pacman_pos.(!pacman_idx).(1);
     clear_graph ();
-    dessine_pac !x !y yellow;
     dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
+    dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
     trace_lab upleftx uplefty taille_case l h mur_present;
   done;
   clear_graph ();
@@ -269,7 +256,9 @@ let () =
   let upleftx = 50 in
   let uplefty = 850 in
   let taille_case = 40 in
+  let _ = Random.self_init () in
   fantome_idx := (l - 1);
   pacman_idx := 0;
-  set_line_width 2;
-  draw_game upleftx uplefty l h taille_case;;
+  set_line_width 1;
+  draw_game upleftx uplefty l h taille_case;
+  ignore @@ read_key ();;
