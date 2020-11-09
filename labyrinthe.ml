@@ -1,7 +1,11 @@
-#load "graphics.cma";;
 open Graphics;;
-open_graph " 900x600";
-set_line_width 2;;
+open_graph " 900x1080";;
+
+let pacman_idx = ref 0;;
+
+let fantome_idx = ref 0;;
+
+let win = ref false;;
 
 module type UFsig =
 sig
@@ -88,7 +92,6 @@ let generate_lab l h =
   while !acc < (l * h) do
     let (d, x, y) = mur_au_hasard l h in
     let (i, j) = cases_adjacentes l h (d, x, y) in
-    Printf.printf "%d %d\n" i j;
     if find uf i <> find uf j
     then begin
       union uf i j;
@@ -135,17 +138,14 @@ let trace_lab upleftx uplefty taille_case l h mur_present =
     done;
   done;;
 
-let pacman_idx = ref 0;;
-
 let verify_edges l h x =
-  (x < l * h) && (x >= 0)
+  (x < l * h) && (x >= 0);;
 
 let move_pacman l h key taille_case mur_present =
   let xl = !pacman_idx / l in
   let yl = !pacman_idx mod l in
 
   match key with
-
   | 'z' when verify_edges l h (!pacman_idx - l) ->
     if !pacman_idx >= l && not mur_present.(1).(xl - 1).(yl)
     then pacman_idx := !pacman_idx - l;
@@ -160,7 +160,7 @@ let move_pacman l h key taille_case mur_present =
     then pacman_idx := !pacman_idx + 1;
   | _ -> ();;
 
-let dessine_pac x y c = begin
+let dessine_pac x y c =
   let oeil(x,y) =
     set_color black;
     fill_circle (x + 5) (y + 7) 4 in
@@ -171,12 +171,10 @@ let dessine_pac x y c = begin
   fill_circle (x) (y) 20;
   oeil(x,y);
   bouche(x,y);
-  set_color black;
-end
+  set_color black;;
 
 let gen_pacman_array_position upleftx uplefty l h taille_case =
   let pacman_pos = Array.init (l * h) (fun i -> [|i; i|]) in
-
   let x = ref (upleftx + (taille_case / 2)) in
   let y = ref (uplefty - (taille_case / 2)) in
   pacman_pos.(0).(0) <- !x;
@@ -194,34 +192,87 @@ let gen_pacman_array_position upleftx uplefty l h taille_case =
     pacman_pos.(i).(0) <- !x;
     pacman_pos.(i).(1) <- !y;
   done;
-  pacman_pos
+  pacman_pos;;
 
 let is_win l h =
   !pacman_idx = (l * h) - 1;;
+
+let move_fantome l h =
+  let pos = ref !fantome_idx in
+  let xfantome = !fantome_idx / l in
+  let yfantome = !fantome_idx mod l in
+  let xpacman = !pacman_idx / l in
+  let ypacman = !pacman_idx mod l in
+
+  if xfantome <> xpacman
+  then begin
+    if xfantome < xpacman
+    then pos := !pos + l
+    else pos := !pos - l
+  end
+  else begin
+    if yfantome < ypacman
+    then
+      if verify_edges l h (!pos + 1)
+      then pos := !pos + 1
+      else pos := !pos - l
+    else
+    if verify_edges l h (!pos - 1)
+    then pos := !pos - 1
+    else pos := !pos + l
+  end;
+  fantome_idx := !pos;;
+
+open Unix;;
+
+let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
+  let x = ref (pacman_pos.(!fantome_idx).(0)) in
+  let y = ref (pacman_pos.(!fantome_idx).(1)) in
+  dessine_pac !x !y blue;
+  while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
+    Unix.sleep 2;
+    move_fantome l h;
+    x := (pacman_pos.(!fantome_idx).(0));
+    y := (pacman_pos.(!fantome_idx).(1));
+    clear_graph ();
+    dessine_pac !x !y blue;
+    dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
+    trace_lab upleftx uplefty taille_case l h mur_present;
+  done;;
 
 let draw_game upleftx uplefty l h taille_case =
   let mur_present = generate_lab l h in
   let pacman_pos = gen_pacman_array_position upleftx uplefty l h taille_case in
   let x = ref pacman_pos.(!pacman_idx).(0) in
   let y = ref pacman_pos.(!pacman_idx).(1) in
+  let _ = Thread.create ia (upleftx, uplefty, l, h, pacman_pos,  taille_case, mur_present) in
   clear_graph ();
   trace_lab upleftx uplefty taille_case l h mur_present;
+
   dessine_pac !x !y yellow;
-  while not (is_win l h) do
+  while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     let key = read_key() in
     move_pacman l h key taille_case mur_present;
     x := pacman_pos.(!pacman_idx).(0);
     y := pacman_pos.(!pacman_idx).(1);
     clear_graph ();
     dessine_pac !x !y yellow;
+    dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
     trace_lab upleftx uplefty taille_case l h mur_present;
   done;
   clear_graph ();
   moveto 500 500;
-  draw_string "GAGNE";;
-
-let check_wall l h mur_present (d, x, y) =
-  mur_present.(d).(x).(y)
+  if (!pacman_idx = !fantome_idx)
+  then draw_string "PERDU"
+  else draw_string "GAGNE";;
 
 let () =
-  draw_game 100 850 15 15 40;;
+  let l = 15 in
+  let h = 15 in
+  let upleftx = 50 in
+  let uplefty = 850 in
+  let taille_case = 30 in
+  fantome_idx := (l - 1);
+  pacman_idx := 0;
+  set_line_width 2;
+  draw_game upleftx uplefty l h taille_case;;
