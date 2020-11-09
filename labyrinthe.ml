@@ -2,10 +2,7 @@ open Graphics;;
 open_graph " 900x1080";;
 
 let pacman_idx = ref 0;;
-
 let fantome_idx = ref 0;;
-
-let win = ref false;;
 
 module type UFsig =
 sig
@@ -267,11 +264,11 @@ let draw_game upleftx uplefty l h taille_case =
   else draw_string "GAGNE";;
 
 let () =
-  let l = 5 in
-  let h = 5 in
+  let l = 10 in
+  let h = 10 in
   let upleftx = 50 in
   let uplefty = 850 in
-  let taille_case = 30 in
+  let taille_case = 40 in
   fantome_idx := (l - 1);
   pacman_idx := 0;
   set_line_width 2;

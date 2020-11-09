@@ -1,13 +1,15 @@
 CC=ocamlc
 FILE_OUT=game.out
 FLAGS=-thread unix.cma threads.cma graphics.cma -o $(FILE_OUT)
-FILE_IN=labyrinthe.ml
+ML_FILE=labyrinthe.ml
 
-all: compile run clean
+all: compile run clean-all
 
 compile:
-	$(CC) $(FLAGS) labyrinthe.ml
+	$(CC) $(FLAGS) $(ML_FILE)
+clean-all:
+	rm -rf *.cmo *.cma *.cmi *.out
 clean:
-	rm -rf *.cmo *.cma *.out *.cmi
+	rm -rf *.cmo *.cma *.cmi
 run:
 	./$(FILE_OUT)
