@@ -152,17 +152,9 @@ let move_pacman l h key mur_present =
     then pacman_idx := !pacman_idx + 1;
   | _ -> ();;
 
-let dessine_pac x y c =
-  let oeil(x,y) =
-    set_color black;
-    fill_circle (x + 5) (y + 7) 4 in
-  let bouche(x,y) =
-    set_color white;
-    fill_arc (x) (y)  20  20 (-20) 10  in
+let dessine_pac x y c taille_case =
   set_color c;
-  fill_circle (x) (y) 20;
-  oeil(x,y);
-  bouche(x,y);
+  fill_circle (x) (y) (taille_case / 3);
   set_color black;;
 
 let gen_pacman_array_position upleftx uplefty l h taille_case =
@@ -196,19 +188,18 @@ let move_fantome l h =
   let xpacman = !pacman_idx / l in
   let ypacman = !pacman_idx mod l in
 
-  if xfantome <> xpacman
-  then begin
+  if yfantome = ypacman then begin
     if xfantome < xpacman
     then pos := !pos + l
     else pos := !pos - l
   end
+  else if yfantome < ypacman
+  then begin
+    if verify_edges l h (!pos + 1)
+    then pos := !pos + 1
+    else pos := !pos - l
+  end
   else begin
-    if yfantome < ypacman
-    then
-      if verify_edges l h (!pos + 1)
-      then pos := !pos + 1
-      else pos := !pos - l
-    else
     if verify_edges l h (!pos - 1)
     then pos := !pos - 1
     else pos := !pos + l
@@ -216,24 +207,28 @@ let move_fantome l h =
   fantome_idx := !pos;;
 
 let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
-  dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
+  dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     (* ignore (Unix.select [] [] [] 0.6); *)
     Unix.sleep 2;
-    if (not (is_win l h) && (!pacman_idx <> !fantome_idx))
+    if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le Unix.sleep il y a un gagnant ou perdant *)
     then begin
       move_fantome l h;
       clear_graph ();
-      dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
-      dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
+      dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
+      dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
       trace_lab upleftx uplefty taille_case l h mur_present;
     end;
   done;
+  clear_graph ();
+  moveto (fst !center) (snd !center);
   if !pacman_idx = !fantome_idx
   then begin
-    clear_graph ();
-    moveto (fst !center) (snd !center);
     draw_string "PERDU";
+  end
+  else if (is_win l h)
+  then begin
+    draw_string "GAGNE";
   end;;
 
 
@@ -243,15 +238,15 @@ let draw_game upleftx uplefty l h taille_case =
   let _ = Thread.create ia (upleftx, uplefty, l, h, pacman_pos,  taille_case, mur_present) in
   clear_graph ();
   trace_lab upleftx uplefty taille_case l h mur_present;
-  dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
+  dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     let key = read_key() in
-    if (not (is_win l h) && (!pacman_idx <> !fantome_idx))
+    if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le read_key() il y a un gagnant ou perdant *)
     then begin
       move_pacman l h key mur_present;
       clear_graph ();
-      dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
-      dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
+      dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
+      dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
       trace_lab upleftx uplefty taille_case l h mur_present;
     end;
   done;
@@ -261,19 +256,17 @@ let draw_game upleftx uplefty l h taille_case =
   then draw_string "GAGNE";
   if !pacman_idx = !fantome_idx
   then begin
-    clear_graph ();
-    moveto (fst !center) (snd !center);
     draw_string "PERDU";
   end;;
 
 let () =
-  let l = 5 in
-  let h = 5 in
+  let l = 10 in
+  let h = 10 in
   let taille_case = ref 40 in
-  let upleftx = 20 in
+  let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
   let _ = Random.self_init () in
-  let width = (l + 1) * !taille_case in
+  let width = (l + 2) * !taille_case in
   let height = (h + 2) * !taille_case in
   let graph_size = " " ^ string_of_int width ^ "x" ^ string_of_int height in
   center := (width / 2, height / 2);
