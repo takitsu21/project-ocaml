@@ -1,8 +1,9 @@
 open Graphics;;
-open_graph " 900x1080";;
+
 
 let pacman_idx = ref 0;;
 let fantome_idx = ref 0;;
+let center = ref (0, 0);;
 
 module type UFsig =
 sig
@@ -227,7 +228,14 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
       dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
       trace_lab upleftx uplefty taille_case l h mur_present;
     end;
-  done;;
+  done;
+  if !pacman_idx = !fantome_idx
+  then begin
+    clear_graph ();
+    moveto (fst !center) (snd !center);
+    draw_string "PERDU";
+  end;;
+
 
 let draw_game upleftx uplefty l h taille_case =
   let mur_present = generate_lab l h in
@@ -238,27 +246,40 @@ let draw_game upleftx uplefty l h taille_case =
   dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     let key = read_key() in
-    move_pacman l h key mur_present;
-    clear_graph ();
-    dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
-    dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
-    trace_lab upleftx uplefty taille_case l h mur_present;
+    if (not (is_win l h) && (!pacman_idx <> !fantome_idx))
+    then begin
+      move_pacman l h key mur_present;
+      clear_graph ();
+      dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) blue;
+      dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) yellow;
+      trace_lab upleftx uplefty taille_case l h mur_present;
+    end;
   done;
   clear_graph ();
-  moveto 500 500;
-  if (!pacman_idx = !fantome_idx)
-  then draw_string "PERDU"
-  else draw_string "GAGNE";;
+  moveto (fst !center) (snd !center);
+  if (is_win l h)
+  then draw_string "GAGNE";
+  if !pacman_idx = !fantome_idx
+  then begin
+    clear_graph ();
+    moveto (fst !center) (snd !center);
+    draw_string "PERDU";
+  end;;
 
 let () =
-  let l = 10 in
-  let h = 10 in
-  let upleftx = 50 in
-  let uplefty = 850 in
-  let taille_case = 40 in
+  let l = 5 in
+  let h = 5 in
+  let taille_case = ref 40 in
+  let upleftx = 20 in
+  let uplefty = (h + 1) * !taille_case in
   let _ = Random.self_init () in
+  let width = (l + 1) * !taille_case in
+  let height = (h + 2) * !taille_case in
+  let graph_size = " " ^ string_of_int width ^ "x" ^ string_of_int height in
+  center := (width / 2, height / 2);
+  open_graph graph_size;
   fantome_idx := (l - 1);
   pacman_idx := 0;
   set_line_width 1;
-  draw_game upleftx uplefty l h taille_case;
+  draw_game upleftx uplefty l h !taille_case;
   ignore @@ read_key ();;
