@@ -134,21 +134,21 @@ let verify_edges l h x =
   (x < l * h) && (x >= 0);;
 
 let move_pacman l h key mur_present =
-  let xl = !pacman_idx / l in
-  let yl = !pacman_idx mod l in
+  let xpacman = !pacman_idx / l in
+  let ypacman = !pacman_idx mod l in
 
   match key with
   | 'z' when verify_edges l h (!pacman_idx - l) ->
-    if !pacman_idx >= l && not mur_present.(1).(xl - 1).(yl)
+    if !pacman_idx >= l && not mur_present.(1).(xpacman - 1).(ypacman)
     then pacman_idx := !pacman_idx - l;
   | 'q' when verify_edges l h (!pacman_idx - 1) ->
-    if yl >= 1 && not mur_present.(0).(xl).(yl - 1)
+    if ypacman >= 1 && not mur_present.(0).(xpacman).(ypacman - 1)
     then pacman_idx := !pacman_idx - 1;
   | 's' when verify_edges l h (!pacman_idx + l) ->
-    if not mur_present.(1).(xl).(yl)
+    if not mur_present.(1).(xpacman).(ypacman)
     then pacman_idx := !pacman_idx + l;
   | 'd' when verify_edges l h (!pacman_idx + 1) ->
-    if !pacman_idx < ((l * h) - 1) && not mur_present.(0).(xl).(yl)
+    if !pacman_idx < ((l * h) - 1) && not mur_present.(0).(xpacman).(ypacman)
     then pacman_idx := !pacman_idx + 1;
   | _ -> ();;
 
@@ -209,8 +209,8 @@ let move_fantome l h =
 let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
-    (* ignore (Unix.select [] [] [] 0.6); *)
-    Unix.sleep 2;
+    ignore (Unix.select [] [] [] 0.4);
+    (* Unix.sleep 2; *)
     if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le Unix.sleep il y a un gagnant ou perdant *)
     then begin
       move_fantome l h;
