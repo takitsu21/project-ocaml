@@ -156,7 +156,7 @@ let move_pacman l h key mur_present =
   | 'w' -> raise (invalid_arg "jeu fermer");
   | _ -> ();;
 
-let dessine_pac x y c taille_case =
+let draw_player x y c taille_case =
   set_color c;
   fill_circle (x) (y) (taille_case / 3);
   set_color black;;
@@ -211,7 +211,7 @@ let move_fantome l h =
   fantome_idx := !pos;;
 
 let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
-  dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
+  draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     (* ignore (Unix.select [] [] [] 0.5); *)
     Unix.sleep 2;
@@ -219,8 +219,8 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
     then begin
       move_fantome l h;
       clear_graph ();
-      dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
-      dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
+      draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
+      draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
       trace_lab upleftx uplefty taille_case l h mur_present;
     end;
   done;
@@ -242,15 +242,15 @@ let draw_game upleftx uplefty l h taille_case =
   let _ = Thread.create ia (upleftx, uplefty, l, h, pacman_pos,  taille_case, mur_present) in
   clear_graph ();
   trace_lab upleftx uplefty taille_case l h mur_present;
-  dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
+  draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     let key = read_key() in
     if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le read_key() il y a un gagnant ou perdant *)
     then begin
       move_pacman l h key mur_present;
       clear_graph ();
-      dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
-      dessine_pac pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
+      draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
+      draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
       trace_lab upleftx uplefty taille_case l h mur_present;
     end;
   done;
