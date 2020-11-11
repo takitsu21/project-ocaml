@@ -133,6 +133,9 @@ let trace_lab upleftx uplefty taille_case l h mur_present =
 let verify_edges l h x =
   (x < l * h) && (x >= 0);;
 
+let make_sound () =
+  sound 15000 500;;
+
 let move_pacman l h key mur_present =
   let xpacman = !pacman_idx / l in
   let ypacman = !pacman_idx mod l in
@@ -140,16 +143,17 @@ let move_pacman l h key mur_present =
   match key with
   | 'z' when verify_edges l h (!pacman_idx - l) ->
     if !pacman_idx >= l && not mur_present.(1).(xpacman - 1).(ypacman)
-    then pacman_idx := !pacman_idx - l;
+    then pacman_idx := !pacman_idx - l else begin make_sound (); end;
   | 'q' when verify_edges l h (!pacman_idx - 1) ->
     if ypacman >= 1 && not mur_present.(0).(xpacman).(ypacman - 1)
-    then pacman_idx := !pacman_idx - 1;
+    then pacman_idx := !pacman_idx - 1 else begin make_sound (); end;
   | 's' when verify_edges l h (!pacman_idx + l) ->
     if not mur_present.(1).(xpacman).(ypacman)
-    then pacman_idx := !pacman_idx + l;
+    then pacman_idx := !pacman_idx + l else begin make_sound (); end;
   | 'd' when verify_edges l h (!pacman_idx + 1) ->
     if !pacman_idx < ((l * h) - 1) && not mur_present.(0).(xpacman).(ypacman)
-    then pacman_idx := !pacman_idx + 1;
+    then pacman_idx := !pacman_idx + 1 else begin make_sound (); end;
+  | 'w' -> raise (invalid_arg "jeu fermer");
   | _ -> ();;
 
 let dessine_pac x y c taille_case =
@@ -209,8 +213,8 @@ let move_fantome l h =
 let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   dessine_pac pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
-    ignore (Unix.select [] [] [] 0.4);
-    (* Unix.sleep 2; *)
+    (* ignore (Unix.select [] [] [] 0.5); *)
+    Unix.sleep 2;
     if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le Unix.sleep il y a un gagnant ou perdant *)
     then begin
       move_fantome l h;
@@ -260,8 +264,8 @@ let draw_game upleftx uplefty l h taille_case =
   end;;
 
 let () =
-  let l = 10 in
-  let h = 10 in
+  let l = 15 in
+  let h = 15 in
   let taille_case = ref 40 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
@@ -273,6 +277,5 @@ let () =
   open_graph graph_size;
   fantome_idx := (l - 1);
   pacman_idx := 0;
-  set_line_width 1;
   draw_game upleftx uplefty l h !taille_case;
   ignore @@ read_key ();;
