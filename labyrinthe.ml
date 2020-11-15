@@ -217,11 +217,9 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
     Unix.sleep 2;
     if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le Unix.sleep il y a un gagnant ou perdant *)
     then begin
+      draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
       move_fantome l h;
-      clear_graph ();
       draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
-      draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
-      trace_lab upleftx uplefty taille_case l h mur_present;
     end;
   done;
   clear_graph ();
@@ -247,11 +245,9 @@ let draw_game upleftx uplefty l h taille_case =
     let key = read_key() in
     if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le read_key() il y a un gagnant ou perdant *)
     then begin
+      draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
       move_pacman l h key mur_present;
-      clear_graph ();
-      draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
       draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
-      trace_lab upleftx uplefty taille_case l h mur_present;
     end;
   done;
   clear_graph ();
@@ -264,8 +260,8 @@ let draw_game upleftx uplefty l h taille_case =
   end;;
 
 let () =
-  let l = 15 in
-  let h = 15 in
+  let l = 5 in
+  let h = 5 in
   let taille_case = ref 40 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
