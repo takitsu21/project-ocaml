@@ -56,16 +56,18 @@ let mur_au_hasard l h =
   let x = Random.int h in
   let y = Random.int l in
   let d = Random.int 2 in
-  if x = (h-1) then
-    if y = l-1 then
-      (0,x,y-1)
-    else (0, x, y) else
-  if y = (l- 1) then
-    if x < h - 1 then
-      (1, x, y)
-    else (1,x-1,y) else
-    (d, x , y);;
-
+  if x = (h - 1) then begin
+      if y = l - 1 then
+        (0, x, y - 1)
+      else (0, x, y)
+    end
+  else begin
+    if y = (l - 1) then
+      if x < h - 1 then
+        (1, x, y)
+      else (1, x - 1, y)
+    else (d, x , y)
+  end;;
 
 let gen_mur_present l h =
   let mur_present = Array.make 2 [||] in
