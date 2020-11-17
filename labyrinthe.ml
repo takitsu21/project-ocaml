@@ -22,7 +22,7 @@ struct
 
   let rec find uf x =
     let pi = uf.parent.(x) in
-    if pi == x then
+    if pi = x then
       x
     else begin
       let racine = find uf pi in
@@ -57,10 +57,10 @@ let mur_au_hasard l h =
   let y = Random.int l in
   let d = Random.int 2 in
   if x = (h - 1) then begin
-      if y = l - 1 then
-        (0, x, y - 1)
-      else (0, x, y)
-    end
+    if y = l - 1 then
+      (0, x, y - 1)
+    else (0, x, y)
+  end
   else begin
     if y = (l - 1) then
       if x < h - 1 then
@@ -262,8 +262,8 @@ let draw_game upleftx uplefty l h taille_case =
   end;;
 
 let () =
-  let l = 5 in
-  let h = 5 in
+  let l = 10 in
+  let h = 10 in
   let taille_case = ref 40 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
