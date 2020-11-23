@@ -22,7 +22,7 @@ struct
 
   let rec find uf x =
     let pi = uf.parent.(x) in
-    if pi == x then
+    if pi = x then
       x
     else begin
       let racine = find uf pi in
@@ -57,10 +57,10 @@ let mur_au_hasard l h =
   let y = Random.int l in
   let d = Random.int 2 in
   if x = (h - 1) then begin
-      if y = l - 1 then
-        (0, x, y - 1)
-      else (0, x, y)
-    end
+    if y = l - 1 then
+      (0, x, y - 1)
+    else (0, x, y)
+  end
   else begin
     if y = (l - 1) then
       if x < h - 1 then
@@ -81,6 +81,7 @@ let gen_mur_present l h =
 
 let generate_lab l h =
   let mur_present = gen_mur_present l h in
+  (* let voisines = Array.init (l * h) (fun _ -> false) in *)
   let uf = create (l * h) in
   let acc = ref 1 in
   while !acc < (l * h) do
@@ -138,6 +139,9 @@ let verify_edges l h x =
 let make_sound () =
   sound 15000 500;;
 
+let cases_voisines l h =
+
+
 let move_pacman l h key mur_present =
   let xpacman = !pacman_idx / l in
   let ypacman = !pacman_idx mod l in
@@ -186,6 +190,15 @@ let gen_pacman_array_position upleftx uplefty l h taille_case =
 
 let is_win l h =
   !pacman_idx = (l * h) - 1;;
+
+(* let rec est_relie src dst evite voisines =
+  if src = dst then true else begin
+  for i = 0 to (Array.length voisines.(dst)) - 1 do
+    if (est_relie voisines.(i) dst src voisines)
+    then true;
+  done;
+  false
+  end;; *)
 
 let move_fantome l h =
   let pos = ref !fantome_idx in
@@ -262,8 +275,8 @@ let draw_game upleftx uplefty l h taille_case =
   end;;
 
 let () =
-  let l = 5 in
-  let h = 5 in
+  let l = 10 in
+  let h = 10 in
   let taille_case = ref 40 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
