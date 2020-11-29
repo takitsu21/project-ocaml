@@ -87,14 +87,14 @@ let verify_edges l h x =
   (* let xp = x mod l in
      let yp = x mod h in *)
   (x < l * h) && (x >= 0);;
-  (* Printf.printf "x = %d xp = %d yp = %d\n" x xp yp; *)
-  (* if (x < l * h) && (x >= 0)
-  then if xp = l - 1 then false
-    else if yp = 0 then false
-    else true
-  else false *)
+(* Printf.printf "x = %d xp = %d yp = %d\n" x xp yp; *)
+(* if (x < l * h) && (x >= 0)
+   then if xp = l - 1 then false
+   else if yp = 0 then false
+   else true
+   else false *)
 
-let case_voisines i l h = Printf.printf " <case voisines> appélé pour %d\n " i;
+let case_voisines i l h =
   if i < l && i > 0 && i <(l-1) then [|i-1;i+1;i+l|]
   else if i < l && i > 0 && i = (l-1) then [|i-1;i+l|]
   else if i mod l = 0 && (i/l) = 0 then [|i+1;i+l|]
@@ -117,6 +117,8 @@ let cases_voisines l h value =
 let gen_voisines l h =
   let ret = Array.init (l*h) (fun i -> case_voisines i l h) in
   ret;;
+
+
 (* let test =
    Array.init 5 (fun i -> Array.init 5 (cases_voisines 5 5 i)) *)
 (* let xarray = [|x-1;x+1;x+l;x-l|] in
@@ -130,7 +132,6 @@ let gen_voisines l h =
 
 let generate_lab l h =
   let mur_present = gen_mur_present l h in
-  let voisines = List.init (l * h) (fun i -> i) in
   let uf = create (l * h) in
   let acc = ref 1 in
   while !acc < (l * h) do
@@ -144,7 +145,6 @@ let generate_lab l h =
       acc := !acc + 1;
     end
   done;
-  List.iter (fun i -> Printf.printf "%d" i) voisines;
   mur_present;;
 
 let trace_pourtour upleftx uplefty taille_case l h =
@@ -306,34 +306,35 @@ let is_win l h =
    false
    end;; *)
 
-let move_fantome l h =
-  let pos = ref !fantome_idx in
-  let xfantome = !fantome_idx / l in
-  let yfantome = !fantome_idx mod l in
-  let xpacman = !pacman_idx / l in
-  let ypacman = !pacman_idx mod l in
 
-  if yfantome = ypacman then begin
-    if xfantome < xpacman
-    then pos := !pos + l
-    else pos := !pos - l
-  end
-  else if yfantome < ypacman
-  then begin
-    if verify_edges l h (!pos + 1)
-    then pos := !pos + 1
-    else pos := !pos - l
-  end
-  else begin
-    if verify_edges l h (!pos - 1)
-    then pos := !pos - 1
-    else pos := !pos + l
-  end;
-  fantome_idx := !pos;;
+(* fantome_idx := array_path.(0);; *)
+(* let pos = ref !fantome_idx in
+   let xfantome = !fantome_idx / l in
+   let yfantome = !fantome_idx mod l in
+   let xpacman = !pacman_idx / l in
+   let ypacman = !pacman_idx mod l in
+
+   if yfantome = ypacman then begin
+   if xfantome < xpacman
+   then pos := !pos + l
+   else pos := !pos - l
+   end
+   else if yfantome < ypacman
+   then begin
+   if verify_edges l h (!pos + 1)
+   then pos := !pos + 1
+   else pos := !pos - l
+   end
+   else begin
+   if verify_edges l h (!pos - 1)
+   then pos := !pos - 1
+   else pos := !pos + l
+   end;
+   fantome_idx := !pos;; *)
 
 
 let evite i l h mur_present =
-  let voisin = cases_voisines l h i in
+  let voisin = case_voisines i l h in
   let give_x case = case / l in
   let give_y case = case mod l in
   let tab = ref [||] in
@@ -358,40 +359,89 @@ let evite i l h mur_present =
   done;
   !tab;;
 
-let a = ref [||];;
+let gen_evite voisines mur_present l h =
+   let ret = Array.init (Array.length voisines) (fun i -> evite i l h mur_present) in
+   ret;;
 
-let rec est_relie src dst _evite l h mur_present voisines =
+let fantom_array = ref [||];;
+
+
+let move_fantome l h =
+  (* print_int !fantom_array.(0); *)
+  (* Array.iter *)
+  fantome_idx := !fantom_array.(0);;
+
+let rectify_voisines voisines evites =
+  let new_array = Array.init (Array.length voisines) (fun _ -> [||]) in
+
+  for i = 0 to (Array.length voisines) - 1 do
+    let tmp_array = ref [||] in
+    for j = 0 to  (Array.length voisines.(i)) - 1 do
+        if not (Array.mem voisines.(i).(j) evites.(i))
+        then tmp_array := Array.append !tmp_array [|voisines.(i).(j)|]
+
+
+    done;
+    new_array.(i) <- !tmp_array;
+  done;
+  new_array;;
+
+let rec est_relie src dst _evite l h mur_present voisines posis =
   (* Printf.printf "src = %d _evite = %d\n" src _evite; *)
   (* if src <> 1 then tmp_array := Array.append !tmp_array [|src|]; *)
-  a := Array.append !a [|src|];
-  (* draw_player posis.(src).(0) posis.(src).(1) green 20 ; *)
+  (* a := Array.append !a [|src|]; *)
+  draw_player posis.(src).(0) posis.(src).(1) green 15;
+  draw_player posis.(_evite).(0) posis.(_evite).(1) yellow 20;
 
-  if src = dst then true
+  (* Array.iter (fun i -> Printf.printf "%d\n" i) !fantom_array; *)
+  (* Printf.printf "src = %d\n" src;
+  Printf.printf "%d\n" (Array.length !fantom_array); *)
+  if src = dst then begin
+  print_string "on a fini";
+  true
+  end
   else
     let evite_array = ref [||] in
-    for i = 0 to (Array.length voisines.(src)) do
-      evite_array := evite src l h mur_present;
-      for k = 0 to (Array.length !evite_array) - 1 do
-        if _evite <> voisines.(src).(i)
-        then est_relie voisines.(src).(i) dst src l h mur_present voisines
-        else false;
+    evite_array := evite src l h mur_present;
+    (* for k = 0 to (Array.length !evite_array) - 1 do *)
+      (* evite_array := evite src l h mur_present; *)
+      for i = 0 to (Array.length voisines.(src)) - 1 do
+        (* est_relie voisines.(src).(i) dst src l h mur_present voisines posis *)
+
+        (* if !evite_array.(k) <> voisines.(src).(i)
+        then begin *)
+
+          if _evite <> voisines.(src).(i) then
+          if est_relie voisines.(src).(i) dst src l h mur_present voisines posis then begin fantom_array := Array.append !fantom_array [|_evite|]; true end else false
+          else false
+        (* end *)
+        (* else false; *)
       done;
-    done;
+    (* done; *)
     false;;
 
-(* est_relie 4 0 0 l h mur_present voisines *)
+(* est_relie 9 0 0 l h mur_present voisines *)
 
 let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
+  let v = (gen_voisines l h) in
+  let voisines = rectify_voisines (gen_voisines l h) (gen_evite v mur_present l h) in
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     (* ignore (Unix.select [] [] [] 0.5); *)
     Unix.sleep 2;
 
-    ignore @@ est_relie !fantome_idx !pacman_idx 0 l h mur_present (gen_voisines l h) pacman_pos;
+    ignore @@ est_relie !fantome_idx !pacman_idx !fantome_idx l h mur_present voisines pacman_pos;
+
+
+
+
     if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le Unix.sleep il y a un gagnant ou perdant *)
     then begin
       draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
+
       move_fantome l h;
+      Printf.printf "fantome idx after move = %d\n" !fantome_idx;
+
       draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
     end;
   done;
@@ -406,7 +456,7 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
     draw_string "GAGNE";
   end;;
 
-let case_voisines i l h = Printf.printf " <case voisines> appélé pour %d\n " i;
+let case_voisines i l h =
   if i < l && i > 0 && i <(l-1) then [|i-1;i;i+1;i+l|]
   else if i < l && i > 0 && i = (l-1) then [|i-1;i;i;i+l|]
   else if i mod l = 0 && (i/l) = 0 then [|i;i;i+1;i+l|]
@@ -496,9 +546,9 @@ let draw_game upleftx uplefty l h taille_case =
       let is_solved = solve src dst !correct_path !was_here l h mur_present in *)
 
 let () =
-  let l = 10 in
-  let h = 10 in
-  let taille_case = ref 40 in
+  let l = 20 in
+  let h = 20 in
+  let taille_case = ref 30 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
   let _ = Random.self_init () in
