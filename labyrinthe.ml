@@ -1,13 +1,9 @@
 open Graphics;;
 
-
 let pacman_idx = ref 0;;
 let fantome_idx = ref 0;;
 let center = ref (0, 0);;
-let current_case_path_finding = ref 0;;
-let checkpoint = ref 0;;
-let old_pos = ref 0;;
-
+let fantom_array = ref [||];;
 
 module type UFsig =
 sig
@@ -84,15 +80,7 @@ let gen_mur_present l h =
   mur_present;;
 
 let verify_edges l h x =
-  (* let xp = x mod l in
-     let yp = x mod h in *)
   (x < l * h) && (x >= 0);;
-(* Printf.printf "x = %d xp = %d yp = %d\n" x xp yp; *)
-(* if (x < l * h) && (x >= 0)
-   then if xp = l - 1 then false
-   else if yp = 0 then false
-   else true
-   else false *)
 
 let case_voisines i l h =
   if i < l && i > 0 && i <(l-1) then [|i-1;i+1;i+l|]
@@ -117,18 +105,6 @@ let cases_voisines l h value =
 let gen_voisines l h =
   let ret = Array.init (l*h) (fun i -> case_voisines i l h) in
   ret;;
-
-
-(* let test =
-   Array.init 5 (fun i -> Array.init 5 (cases_voisines 5 5 i)) *)
-(* let xarray = [|x-1;x+1;x+l;x-l|] in
-   let yarray =
-   let new_array = ref [||] in
-   for i = 0 to 3 do
-   if verify_edges l h array.(i) && not mur_present.(d).(x).(y)
-   then new_array := Array.append !new_array [|array.(i)|]
-   done;
-   !new_array;; *)
 
 let generate_lab l h =
   let mur_present = gen_mur_present l h in
@@ -184,72 +160,13 @@ let trace_lab upleftx uplefty taille_case l h mur_present =
     done;
   done;;
 
-
-
 let make_sound () =
   sound 15000 500;;
-
-let update_voisines l h mur_present tmp_path q =
-  let xpath = !current_case_path_finding / l in
-  let ypath = !current_case_path_finding mod l in
-  let acc = ref 0 in
-  (* if not tmp_path.(!current_case_path_finding) *)
-  (* then begin *)
-
-  if verify_edges l h (!current_case_path_finding + l) && not tmp_path.(!current_case_path_finding + l) && not mur_present.(1).(xpath).(ypath)
-  then acc := !acc + 1;
-  if verify_edges l h (!current_case_path_finding - 1) && not tmp_path.(!current_case_path_finding - 1) && ypath >= 1 && not mur_present.(0).(xpath).(ypath - 1)
-  then acc := + 1;
-  if verify_edges l h (!current_case_path_finding + l) && not tmp_path.(!current_case_path_finding + l) && not mur_present.(1).(xpath).(ypath)
-  then acc := !acc + 1;
-  if verify_edges l h (!current_case_path_finding + 1) && not tmp_path.(!current_case_path_finding + 1) && !current_case_path_finding < ((l * h) - 1) && not mur_present.(0).(xpath).(ypath)
-  then acc := !acc + 1;
-
-  if verify_edges l h (!current_case_path_finding - l) && not tmp_path.(!current_case_path_finding - l) && !current_case_path_finding >= l && not mur_present.(1).(xpath - 1).(ypath)
-  then begin current_case_path_finding := !current_case_path_finding - l; end
-  else if verify_edges l h (!current_case_path_finding - 1) && not tmp_path.(!current_case_path_finding - 1) && ypath >= 1 && not mur_present.(0).(xpath).(ypath - 1)
-  then begin current_case_path_finding := !current_case_path_finding - 1; end
-  else if verify_edges l h (!current_case_path_finding + l) && not tmp_path.(!current_case_path_finding + l) && not mur_present.(1).(xpath).(ypath)
-  then begin current_case_path_finding := !current_case_path_finding + l; end
-  else if verify_edges l h (!current_case_path_finding + 1) && not tmp_path.(!current_case_path_finding + 1) && !current_case_path_finding < ((l * h) - 1) && not mur_present.(0).(xpath).(ypath)
-  then current_case_path_finding := !current_case_path_finding + 1;
-
-  if tmp_path.(!current_case_path_finding) then acc := !acc -1;
-  if !acc <= 0 then current_case_path_finding := Queue.pop q;
-
-
-  if !current_case_path_finding = !checkpoint then current_case_path_finding := !fantome_idx; ignore @@ Queue.pop q; Queue.push !current_case_path_finding q;
-  if !acc > 1 then checkpoint := !current_case_path_finding; Queue.push !checkpoint q;;
-
-(* Printf.printf "top queue = %d\n" (Queue.top q); *)
-(* Queue.iter (fun i -> Printf.printf "%d\n" i) q; *)
-(* try
-   Printf.printf "tmp_path %b\n" tmp_path.(!current_case_path_finding)
-   with _ -> Printf.printf "erreur : %d" !current_case_path_finding; raise (invalid_arg "test");; *)
-
 
 let draw_player x y c taille_case =
   set_color c;
   fill_circle (x) (y) (taille_case / 3);
   set_color black;;
-
-let path_finding l h mur_present tmp_path pos_array q =
-  (* cases_voisines mur_present l h;;  *)
-  let old_tmp = ref [||] in
-  old_tmp := tmp_path;
-  tmp_path.(!current_case_path_finding) <- true;
-  while !pacman_idx <> !current_case_path_finding do
-
-    update_voisines l h mur_present tmp_path q;
-    tmp_path.(!current_case_path_finding) <- true;
-    draw_player (pos_array.(!checkpoint).(0)) (pos_array.(!checkpoint).(1)) yellow 20;
-    draw_player (pos_array.(!current_case_path_finding).(0)) (pos_array.(!current_case_path_finding).(1)) green 10;
-
-
-    Printf.printf "path = %d pacman = %d checkpoint = %d top queue = %d\n" !current_case_path_finding !pacman_idx !checkpoint (Queue.top q);
-  done;
-  tmp_path;;
-
 
 let move_pacman l h key mur_present =
   let xpacman = !pacman_idx / l in
@@ -270,8 +187,6 @@ let move_pacman l h key mur_present =
     then pacman_idx := !pacman_idx + 1 else begin make_sound (); end;
   | 'w' -> raise (invalid_arg "jeu fermer");
   | _ -> ();;
-
-
 
 let gen_pacman_array_position upleftx uplefty l h taille_case =
   let pacman_pos = Array.init (l * h) (fun i -> [|i; i|]) in
@@ -297,17 +212,7 @@ let gen_pacman_array_position upleftx uplefty l h taille_case =
 let is_win l h =
   !pacman_idx = (l * h) - 1;;
 
-(* let rec est_relie src dst evite voisines =
-   if src = dst then true else begin
-   for i = 0 to (Array.length voisines.(dst)) - 1 do
-    if (est_relie voisines.(i) dst src voisines)
-    then true;
-   done;
-   false
-   end;; *)
 
-
-(* fantome_idx := array_path.(0);; *)
 (* let pos = ref !fantome_idx in
    let xfantome = !fantome_idx / l in
    let yfantome = !fantome_idx mod l in
@@ -360,88 +265,74 @@ let evite i l h mur_present =
   !tab;;
 
 let gen_evite voisines mur_present l h =
-   let ret = Array.init (Array.length voisines) (fun i -> evite i l h mur_present) in
-   ret;;
-
-let fantom_array = ref [||];;
-
-
-let move_fantome l h =
-  (* print_int !fantom_array.(0); *)
-  (* Array.iter *)
-  fantome_idx := !fantom_array.(0);;
+  let ret = Array.init (Array.length voisines) (fun i -> evite i l h mur_present) in
+  ret;;
 
 let rectify_voisines voisines evites =
   let new_array = Array.init (Array.length voisines) (fun _ -> [||]) in
-
   for i = 0 to (Array.length voisines) - 1 do
     let tmp_array = ref [||] in
     for j = 0 to  (Array.length voisines.(i)) - 1 do
-        if not (Array.mem voisines.(i).(j) evites.(i))
-        then tmp_array := Array.append !tmp_array [|voisines.(i).(j)|]
-
-
+      if not (Array.mem voisines.(i).(j) evites.(i))
+      then tmp_array := Array.append !tmp_array [|voisines.(i).(j)|]
     done;
     new_array.(i) <- !tmp_array;
   done;
   new_array;;
 
-let rec est_relie src dst _evite l h mur_present voisines posis =
-  (* Printf.printf "src = %d _evite = %d\n" src _evite; *)
-  (* if src <> 1 then tmp_array := Array.append !tmp_array [|src|]; *)
-  (* a := Array.append !a [|src|]; *)
-  draw_player posis.(src).(0) posis.(src).(1) green 15;
-  draw_player posis.(_evite).(0) posis.(_evite).(1) yellow 20;
+let transform bool_array =
+  let new_array = ref [||] in
+  for i = 0 to Array.length bool_array - 1 do
+    if bool_array.(i) then
+      new_array := Array.append !new_array [|i|];
+  done;
+  !new_array;;
 
-  (* Array.iter (fun i -> Printf.printf "%d\n" i) !fantom_array; *)
-  (* Printf.printf "src = %d\n" src;
-  Printf.printf "%d\n" (Array.length !fantom_array); *)
+let move_fantome l h =
+  (* print_int !fantom_array.(0); *)
+  (* Array.iter (fun i -> Printf.printf "%d " i) !fantom_array; *)
+  fantome_idx := !fantom_array.(1);
+  fantom_array := [||];;
+
+let rec est_relie src dst _evite l h mur_present voisines posis =
+  draw_player posis.(src).(0) posis.(src).(1) green 20;
+  draw_player posis.(_evite).(0) posis.(_evite).(1) yellow 20;
   if src = dst then begin
-  print_string "on a fini";
-  true
+    print_string "on a fini\n";
+    true
   end
   else
-    let evite_array = ref [||] in
-    evite_array := evite src l h mur_present;
-    (* for k = 0 to (Array.length !evite_array) - 1 do *)
-      (* evite_array := evite src l h mur_present; *)
-      for i = 0 to (Array.length voisines.(src)) - 1 do
-        (* est_relie voisines.(src).(i) dst src l h mur_present voisines posis *)
+    let _ = 0 in
+    for i = 0 to (Array.length voisines.(src)) - 1 do
+      if _evite <> voisines.(src).(i) then begin
+        if not (Array.mem _evite !fantom_array)
+        then fantom_array := Array.append !fantom_array [|_evite|];
+        if est_relie voisines.(src).(i) dst src l h mur_present voisines posis
+        then true
+        else false;
+      end
+      else false
+    done;
 
-        (* if !evite_array.(k) <> voisines.(src).(i)
-        then begin *)
-
-          if _evite <> voisines.(src).(i) then
-          if est_relie voisines.(src).(i) dst src l h mur_present voisines posis then begin fantom_array := Array.append !fantom_array [|_evite|]; true end else false
-          else false
-        (* end *)
-        (* else false; *)
-      done;
-    (* done; *)
     false;;
 
-(* est_relie 9 0 0 l h mur_present voisines *)
+(* est_relie !fantome_idx !pacman_idx !fantome_idx l h mur_present voisines [||];; *)
 
 let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
   let v = (gen_voisines l h) in
   let voisines = rectify_voisines (gen_voisines l h) (gen_evite v mur_present l h) in
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
-    (* ignore (Unix.select [] [] [] 0.5); *)
-    Unix.sleep 2;
-
-    ignore @@ est_relie !fantome_idx !pacman_idx !fantome_idx l h mur_present voisines pacman_pos;
-
-
-
+    ignore (Unix.select [] [] [] 0.5);
+    (* Unix.sleep 2; *)
+    let relie = est_relie !fantome_idx !pacman_idx !fantome_idx l h mur_present voisines pacman_pos in
+    Printf.printf "est_relie = %b\n" relie;
 
     if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le Unix.sleep il y a un gagnant ou perdant *)
     then begin
       draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
-
       move_fantome l h;
       Printf.printf "fantome idx after move = %d\n" !fantome_idx;
-
       draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
     end;
   done;
@@ -466,9 +357,6 @@ let case_voisines i l h =
   else if (i mod l ) = (h-1) && (i / l) = h-1 then [|i-1;i-l;i;i|]
   else if (i/l) = h-1 then [|i-1;i-l;i+1;i|]
   else [|i-1;i-l;i+1;i+l|] ;;
-
-
-
 
 let draw_game upleftx uplefty l h taille_case =
   let mur_present = generate_lab l h in
@@ -495,59 +383,9 @@ let draw_game upleftx uplefty l h taille_case =
     draw_string "PERDU";
   end;;
 
-
-
-
-
-(* let evite_array = ref ([||]) in
-   for i = 0 to (Array.length voisines) - 1 do
-   for j = 0 to (Array.length voisines.(i)) - 1 do
-   if voisines.(i).(j) = src then Printf.printf "%d %d\n" src voisines.(i).(j);
-    evite_array := evite voisines.(i).(j) l h mur_present;
-    for k = 0 to (Array.length !evite_array) - 1 do
-    print_char '[';
-    Array.iter (fun i -> Printf.printf " %d" i) !evite_array;
-    print_string " ]\n";
-      if !evite_array.(k) <> voisines.(i).(j)
-      then est_relie voisines.(i).(j) dst !evite_array.(k) l h mur_present voisines
-      else false;
-    done;
-   done;
-   done; *)
-
-
-(* est_relie 15 0 0 l h mur_present voisines (gen_pacman_array_position );; *)
-
-(* let rec solve src dst correct_path was_here l h mur_present =
-   if (src = dst)
-   then true;
-   if was_here.(src) || (evite src l h mur_present).() = src then false
-   else begin
-    let src_pos = src mod l in
-    was_here.(src) <- true;
-    if src != 0
-    then if (src != 0)
-      then if solve (src-1) dst correct_path was_here l h mur_present
-        then correct_path.(src) <- true; true;
-    if src_pos != l - 1
-    then if solve (src+1) dst correct_path was_here l h mur_present
-      then correct_path.(src) <- true; true;
-    if src_pos != h - 1 then if solve (src+1) dst correct_path was_here l h mur_present
-      then correct_path.(src) <- true; true;
-    if src_pos != (l * h - 1) then if solve (src+l) dst correct_path was_here l h mur_present
-      then correct_path.(src) <- true; true;
-
-
-
-
-    let solve_maze src dst l h mur_present =
-      let was_here = ref (Array.init (l * h) (fun i -> false)) in
-      let correct_path = ref (Array.init (l * h) (fun i -> false)) in
-      let is_solved = solve src dst !correct_path !was_here l h mur_present in *)
-
 let () =
-  let l = 20 in
-  let h = 20 in
+  let l = 10 in
+  let h = 10 in
   let taille_case = ref 30 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
@@ -559,8 +397,6 @@ let () =
 
   open_graph graph_size;
   fantome_idx := (l - 1);
-  current_case_path_finding := !fantome_idx;
-  checkpoint := !fantome_idx;
   pacman_idx := 0;
   draw_game upleftx uplefty l h !taille_case;
   ignore @@ read_key ();;
