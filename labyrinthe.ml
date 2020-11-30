@@ -292,7 +292,7 @@ let transform bool_array =
 let move_fantome l h =
   est_relie_voisine := false;;
 
-let rec est_relie src dst _evite l h mur_present voisines =
+let rec est_relie src dst _evite voisines =
   if src = dst then begin
     est_relie_voisine := true;
     true
@@ -301,7 +301,7 @@ let rec est_relie src dst _evite l h mur_present voisines =
     begin
       for i = 0 to (Array.length voisines.(src)) - 1 do
         if _evite <> voisines.(src).(i) then begin
-          if est_relie voisines.(src).(i) dst src l h mur_present voisines
+          if est_relie voisines.(src).(i) dst src voisines
           then true
           else false;
         end
@@ -317,11 +317,11 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   let v = (gen_voisines l h) in
   let voisines = rectify_voisines (gen_voisines l h) (gen_evite v mur_present l h) in
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
-    Unix.sleep 2;
+    Unix.sleep 1;
     draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
     try
       for i = 0 to (Array.length voisines.(!fantome_idx)) - 1 do
-        ignore @@ est_relie voisines.(!fantome_idx).(i) !pacman_idx !fantome_idx l h mur_present voisines;
+        ignore @@ est_relie voisines.(!fantome_idx).(i) !pacman_idx !fantome_idx voisines;
         if !est_relie_voisine then begin
           fantome_idx := voisines.(!fantome_idx).(i);
           raise Break
@@ -383,8 +383,8 @@ let draw_game upleftx uplefty l h taille_case =
   end;;
 
 let () =
-  let l = 10 in
-  let h = 10 in
+  let l = 20 in
+  let h = 20 in
   let taille_case = ref 40 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
