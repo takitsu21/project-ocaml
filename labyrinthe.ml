@@ -323,8 +323,8 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   let v = (gen_voisines l h) in
   let voisines = rectify_voisines (gen_voisines l h) (gen_evite v mur_present l h) in
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
-    ignore (Unix.select [] [] [] 0.5);
-    (* Unix.sleep 2; *)
+    (* ignore (Unix.select [] [] [] 0.5); *)
+    Unix.sleep 2;
     let relie = est_relie !fantome_idx !pacman_idx !fantome_idx l h mur_present voisines pacman_pos in
     Printf.printf "est_relie = %b\n" relie;
 
