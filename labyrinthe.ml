@@ -3,7 +3,8 @@ open Graphics;;
 let pacman_idx = ref 0;;
 let fantome_idx = ref 0;;
 let center = ref (0, 0);;
-let fantom_array = ref [||];;
+let est_relie_voisine = ref false;;
+
 
 module type UFsig =
 sig
@@ -289,52 +290,50 @@ let transform bool_array =
   !new_array;;
 
 let move_fantome l h =
-  (* print_int !fantom_array.(0); *)
-  (* Array.iter (fun i -> Printf.printf "%d " i) !fantom_array; *)
-  fantome_idx := !fantom_array.(1);
-  fantom_array := [||];;
+  est_relie_voisine := false;;
 
-let rec est_relie src dst _evite l h mur_present voisines posis =
-  draw_player posis.(src).(0) posis.(src).(1) green 20;
-  draw_player posis.(_evite).(0) posis.(_evite).(1) yellow 20;
+let rec est_relie src dst _evite l h mur_present voisines =
   if src = dst then begin
-    print_string "on a fini\n";
+    est_relie_voisine := true;
     true
   end
   else
-    let _ = 0 in
-    for i = 0 to (Array.length voisines.(src)) - 1 do
-      if _evite <> voisines.(src).(i) then begin
-        if not (Array.mem _evite !fantom_array)
-        then fantom_array := Array.append !fantom_array [|_evite|];
-        if est_relie voisines.(src).(i) dst src l h mur_present voisines posis
-        then true
-        else false;
-      end
-      else false
-    done;
+    begin
+      for i = 0 to (Array.length voisines.(src)) - 1 do
+        if _evite <> voisines.(src).(i) then begin
+          if est_relie voisines.(src).(i) dst src l h mur_present voisines
+          then true
+          else false;
+        end
+        else false
+      done;
+      false
+    end;;
 
-    false;;
-
-(* est_relie !fantome_idx !pacman_idx !fantome_idx l h mur_present voisines [||];; *)
+exception Break;;
 
 let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
   let v = (gen_voisines l h) in
   let voisines = rectify_voisines (gen_voisines l h) (gen_evite v mur_present l h) in
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
-    (* ignore (Unix.select [] [] [] 0.5); *)
     Unix.sleep 2;
-    let relie = est_relie !fantome_idx !pacman_idx !fantome_idx l h mur_present voisines pacman_pos in
-    Printf.printf "est_relie = %b\n" relie;
+    draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
+    try
+      for i = 0 to (Array.length voisines.(!fantome_idx)) - 1 do
+        ignore @@ est_relie voisines.(!fantome_idx).(i) !pacman_idx !fantome_idx l h mur_present voisines;
+        if !est_relie_voisine then begin
+          fantome_idx := voisines.(!fantome_idx).(i);
+          raise Break
+        end
+      done;
+    with Break -> ();
 
-    if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le Unix.sleep il y a un gagnant ou perdant *)
-    then begin
-      draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
-      move_fantome l h;
-      Printf.printf "fantome idx after move = %d\n" !fantome_idx;
-      draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
-    end;
+      if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le Unix.sleep il y a un gagnant ou perdant *)
+      then begin
+        move_fantome l h;
+        draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) red taille_case;
+      end;
   done;
   clear_graph ();
   moveto (fst !center) (snd !center);
@@ -386,7 +385,7 @@ let draw_game upleftx uplefty l h taille_case =
 let () =
   let l = 10 in
   let h = 10 in
-  let taille_case = ref 30 in
+  let taille_case = ref 40 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
   let _ = Random.self_init () in
