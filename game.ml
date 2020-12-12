@@ -3,7 +3,6 @@ open Graphics;;
 let pacman_idx = ref 0;;
 let fantome_idx = ref 0;;
 let center = ref (0, 0);;
-let est_relie_voisine = ref false;;
 
 
 module type UFsig =
