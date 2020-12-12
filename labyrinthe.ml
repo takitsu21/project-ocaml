@@ -104,8 +104,7 @@ let cases_voisines l h value =
   !array;;
 
 let gen_voisines l h =
-  let ret = Array.init (l*h) (fun i -> case_voisines i l h) in
-  ret;;
+  Array.init (l*h) (fun i -> case_voisines i l h);;
 
 let generate_lab l h =
   let mur_present = gen_mur_present l h in
@@ -212,35 +211,37 @@ let gen_pacman_array_position upleftx uplefty l h taille_case =
 let is_win l h =
   !pacman_idx = (l * h) - 1;;
 
-let evite i l h mur_present =
-  let voisin = case_voisines i l h in
-  let give_x case = case / l in
-  let give_y case = case mod l in
-  let tab = ref [||] in
-  for j=0 to (Array.length voisin) - 1 do
-    if voisin.(j) <> i then
-      let x = give_x voisin.(j) in
-      let y = give_y voisin.(j) in
-
-      if voisin.(j) = i-1 then begin
-        if (mur_present.(0).(x).(y) = true) then tab := Array.append !tab [|voisin.(j)|] end;
-      if voisin.(j) = i-l then begin
-        if (mur_present.(1).(x).(y) = true) then tab := Array.append !tab [|voisin.(j)|] end;
-      if voisin.(j) = i+1 then begin
-        let ix = give_x i in
-        let iy = give_y i in
-        if (mur_present.(0).(ix).(iy) = true) then tab := Array.append !tab [|voisin.(j)|] end;
-      if voisin.(j) = i+l then
-        begin
-          let ix = give_x i in
-          let iy = give_y i in
-          if (mur_present.(1).(ix).(iy) = true) then tab := Array.append !tab [|voisin.(j)|] end;
+let evite value l h mur_present =
+  let voisin = case_voisines value l h in
+  let get_xpos case = case / l in
+  let get_ypos case = case mod l in
+  let ret = ref [||] in
+  for i=0 to (Array.length voisin) - 1 do
+    if voisin.(i) <> value then
+      let x = get_xpos voisin.(i) in
+      let y = get_ypos voisin.(i) in
+      if voisin.(i) = value-1 then
+        if (mur_present.(0).(x).(y) = true)
+        then ret := Array.append !ret [|voisin.(i)|];
+      if voisin.(i) = value-l then
+        if (mur_present.(1).(x).(y) = true)
+        then ret := Array.append !ret [|voisin.(i)|];
+      if voisin.(i) = value+1 then begin
+        let ix = get_xpos value in
+        let iy = get_ypos value in
+        if (mur_present.(0).(ix).(iy) = true)
+        then ret := Array.append !ret [|voisin.(i)|]
+      end;
+      if voisin.(i) = value+l then
+        let ix = get_xpos value in
+        let iy = get_ypos value in
+        if (mur_present.(1).(ix).(iy) = true)
+        then ret := Array.append !ret [|voisin.(i)|]
   done;
-  !tab;;
+  !ret;;
 
 let gen_evite voisines mur_present l h =
-  let ret = Array.init (Array.length voisines) (fun i -> evite i l h mur_present) in
-  ret;;
+  Array.init (Array.length voisines) (fun i -> evite i l h mur_present);;
 
 let rectify_voisines voisines evites =
   let new_array = Array.init (Array.length voisines) (fun _ -> [||]) in
@@ -254,20 +255,10 @@ let rectify_voisines voisines evites =
   done;
   new_array;;
 
-let transform bool_array =
-  let new_array = ref [||] in
-  for i = 0 to Array.length bool_array - 1 do
-    if bool_array.(i) then
-      new_array := Array.append !new_array [|i|];
-  done;
-  !new_array;;
-
 exception Break;;
 
 let rec est_relie src dst _evite voisines =
-  if src = dst then begin
-    true
-  end
+  if src = dst then true
   else
     begin
       try
@@ -288,8 +279,8 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   let v = (gen_voisines l h) in
   let voisines = rectify_voisines v (gen_evite v mur_present l h) in
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
-    (* Unix.sleep 1; *)
-    ignore (Unix.select [] [] [] 0.1);
+    Unix.sleep 2;
+    (* ignore (Unix.select [] [] [] 0.1); *)
     draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
     try
       for i = 0 to (Array.length voisines.(!fantome_idx)) - 1 do
@@ -317,12 +308,12 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
 let case_voisines i l h =
   if i < l && i > 0 && i <(l-1) then [|i-1;i;i+1;i+l|]
   else if i < l && i > 0 && i = (l-1) then [|i-1;i;i;i+l|]
+  else if (i mod l ) = (h-1) && (i / l)  < h-1 then [|i-1;i-l;i;i+l|]
+  else if (i/l) = h-1 then [|i-1;i-l;i+1;i|]
+  else if (i mod l ) = (h-1) && (i / l) = h-1 then [|i-1;i-l;i;i|]
+  else if (i mod l ) = 0 && (i / l) = h-1 then [|i;i-l;i+1;i|]
   else if i mod l = 0 && (i/l) = 0 then [|i;i;i+1;i+l|]
   else if (i mod l ) = 0 && (i / l)  < h-1 then [|i;i-l;i+1;i+l|]
-  else if (i mod l ) = 0 && (i / l) = h-1 then [|i;i-l;i+1;i|]
-  else if (i mod l ) = (h-1) && (i / l)  < h-1 then [|i-1;i-l;i;i+l|]
-  else if (i mod l ) = (h-1) && (i / l) = h-1 then [|i-1;i-l;i;i|]
-  else if (i/l) = h-1 then [|i-1;i-l;i+1;i|]
   else [|i-1;i-l;i+1;i+l|] ;;
 
 let draw_game upleftx uplefty l h taille_case =
@@ -331,6 +322,8 @@ let draw_game upleftx uplefty l h taille_case =
   let _ = Thread.create ia (upleftx, uplefty, l, h, pacman_pos,  taille_case, mur_present) in
   clear_graph ();
   trace_lab upleftx uplefty taille_case l h mur_present;
+  moveto (upleftx) (upleftx);
+  draw_string "Z HAUT - Q GAUCHE - S BAS - D DROITE - W QUITTER";
   draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     let key = read_key() in
@@ -351,17 +344,16 @@ let draw_game upleftx uplefty l h taille_case =
   end;;
 
 let () =
-  let l = 30 in
-  let h = 30 in
-  let taille_case = ref 30 in
+  let l = 10 in
+  let h = 10 in
+  let taille_case = ref 40 in
   let upleftx = !taille_case / 2 in
   let uplefty = (h + 1) * !taille_case in
   let _ = Random.self_init () in
-  let width = (l + 2) * !taille_case in
+  let width = (l + 1) * !taille_case in
   let height = (h + 2) * !taille_case in
   let graph_size = " " ^ string_of_int width ^ "x" ^ string_of_int height in
   center := (width / 2, height / 2);
-
   open_graph graph_size;
   fantome_idx := (l - 1);
   pacman_idx := 0;
