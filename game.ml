@@ -1,3 +1,9 @@
+(*
+Réalisé par :
+- BATISSE DYLANN
+- JUNIN THIBAULT
+*)
+
 open Graphics;;
 
 let pacman_idx = ref 0;;
@@ -122,6 +128,7 @@ let generate_lab l h =
   mur_present;;
 
 let trace_pourtour upleftx uplefty taille_case l h =
+  set_color white;
   moveto upleftx uplefty;
   lineto (upleftx + (taille_case * l)) uplefty; (* HAUT *)
   lineto (current_x()) (current_y() - (taille_case * (h - 1))); (* DROITE *)
@@ -164,7 +171,7 @@ let make_sound () =
 let draw_player x y c taille_case =
   set_color c;
   fill_circle (x) (y) (taille_case / 3);
-  set_color black;;
+  set_color white;;
 
 let move_pacman l h key mur_present =
   let xpacman = !pacman_idx / l in
@@ -280,7 +287,7 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   while not (is_win l h) && (!pacman_idx <> !fantome_idx) do
     Unix.sleep 2;
     (* ignore (Unix.select [] [] [] 0.1); *)
-    draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
+    draw_player pacman_pos.(!fantome_idx).(0) pacman_pos.(!fantome_idx).(1) black taille_case; (* On redessine en blanc a la position d'avant *)
     try
       for i = 0 to (Array.length voisines.(!fantome_idx)) - 1 do
         let relie = est_relie voisines.(!fantome_idx).(i) !pacman_idx !fantome_idx voisines in
@@ -297,10 +304,18 @@ let ia (upleftx, uplefty, l, h, pacman_pos, taille_case, mur_present) =
   moveto (fst !center) (snd !center);
   if !pacman_idx = !fantome_idx
   then begin
+    set_color black;
+    fill_rect 0 0 (size_x ()) (size_y ());
+    set_color foreground;
+    set_color white;
     draw_string "PERDU";
   end
   else if (is_win l h)
   then begin
+    set_color black;
+    fill_rect 0 0 (size_x ()) (size_y ());
+    set_color foreground;
+    set_color white;
     draw_string "GAGNE";
   end;;
 
@@ -319,7 +334,9 @@ let draw_game upleftx uplefty l h taille_case =
   let mur_present = generate_lab l h in
   let pacman_pos = gen_pacman_array_position upleftx uplefty l h taille_case in
   let _ = Thread.create ia (upleftx, uplefty, l, h, pacman_pos,  taille_case, mur_present) in
-  clear_graph ();
+  set_color black;
+  fill_rect 0 0 (size_x ()) (size_y ());
+  set_color foreground;
   trace_lab upleftx uplefty taille_case l h mur_present;
   moveto (upleftx) (upleftx);
   draw_string "Z HAUT - Q GAUCHE - S BAS - D DROITE - W QUITTER";
@@ -328,7 +345,7 @@ let draw_game upleftx uplefty l h taille_case =
     let key = read_key() in
     if (not (is_win l h) && (!pacman_idx <> !fantome_idx)) (* double verification au cas ou pendant le read_key() il y a un gagnant ou perdant *)
     then begin
-      draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) white taille_case; (* On redessine en blanc a la position d'avant *)
+      draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) black taille_case; (* On redessine en blanc a la position d'avant *)
       move_pacman l h key mur_present;
       draw_player pacman_pos.(!pacman_idx).(0) pacman_pos.(!pacman_idx).(1) blue taille_case;
     end;
@@ -336,10 +353,20 @@ let draw_game upleftx uplefty l h taille_case =
   clear_graph ();
   moveto (fst !center) (snd !center);
   if (is_win l h)
-  then draw_string "GAGNE";
+  then begin
+    set_color black;
+    fill_rect 0 0 (size_x ()) (size_y ());
+    set_color foreground;
+    set_color white;
+    draw_string "GAGNE";
+  end;
   if !pacman_idx = !fantome_idx
   then begin
-    draw_string "PERDU";
+    set_color black;
+    fill_rect 0 0 (size_x ()) (size_y ());
+    set_color foreground;
+    set_color white;
+    draw_string "PERDU"
   end;;
 
 let () =
